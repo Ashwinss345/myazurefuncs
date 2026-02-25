@@ -1,0 +1,10 @@
+Post http://localhost:7071/api/purchase
+Content-Type: application/json
+
+{
+     "ProductId" : 1234, 
+     "Quantity" : 10, 
+     "CustomerName" : "Ashwin", 
+     "CustomerEmail" : "ashwin234@gmail.com", 
+     "PurchasePrice" : 50.50
+}
