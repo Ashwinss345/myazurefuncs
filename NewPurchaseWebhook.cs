@@ -1,3 +1,5 @@
+using Azure;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -36,16 +38,32 @@ public class NewPurchaseWebhook
         if (order == null) throw new ArgumentException("Order not found or invalid.");
         
         return await Task.FromResult(new NewPurchaseWebhookResponse{
-            Message = new NewOrderMessage(order.ProductId, order.Quantity, order.CustomerName, order.CustomerEmail, order.PurchasePrice),
+            Message = new NewOrderMessage(Guid.NewGuid(), order.ProductId, order.Quantity, order.CustomerName, order.CustomerEmail, order.PurchasePrice),
             Result = new OkObjectResult($"Thanks {order.CustomerName} for purchasing {order.Quantity} of product {order.ProductId} for ${order.PurchasePrice}")
         });
     }
 
     [Function(nameof(GetPurchase))]
-    public IActionResult GetPurchase([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+    public IActionResult GetPurchase(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "purchase/{orderId:guid}")] HttpRequest req, 
+        [BlobInput("tickets/{orderId}.txt", Connection = "AzureWebJobsStorage")] BlobClient ticketClient,
+        Guid orderId)
     {
-        _logger.LogInformation("C# HTTP trigger function processed a request.");
-        var name = req.Query["name"].ToString() ?? "";
-        return new OkObjectResult($"Welcome {name}!");
+        _logger.LogInformation($"Requested details of {orderId}");
+
+        try
+        {
+            var ticketContent = ticketClient.DownloadContent().Value.Content.ToString();
+            _logger.LogInformation($"Ticket content for {orderId}: {ticketContent}");
+
+            return new OkObjectResult(ticketContent);
+        }
+
+        catch (RequestFailedException ex) when (ex.ErrorCode == "BlobNotFound")
+        {
+            _logger.LogError(ex, $"Error fetching details of {orderId}");
+            return new NotFoundObjectResult($"No details found for {orderId}");
+        }
+        
     }
 }

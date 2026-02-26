@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace MyOrg.AzureFuncs;
 
-public record NewOrderMessage(int ProductId, int Quantity, string CustomerName, string CustomerEmail, decimal PurchasePrice);
+public record NewOrderMessage(Guid OrderId, int ProductId, int Quantity, 
+        string CustomerName, string CustomerEmail, decimal PurchasePrice);
 public class ProcessNewOrder
 {
     private readonly ILogger<ProcessNewOrder> _logger;
@@ -16,9 +17,13 @@ public class ProcessNewOrder
     }
     
     [Function(nameof(ProcessNewOrder))]
-    public void Run([QueueTrigger("neworders", Connection = "AzureWebJobsStorage")] NewOrderMessage message)
+    [BlobOutput("tickets/{orderId}.txt", Connection = "AzureWebJobsStorage")]
+    public string Run([QueueTrigger("neworders", Connection = "AzureWebJobsStorage")] NewOrderMessage message)
     {
-        _logger.LogInformation($"C# Queue trigger function processed: {message.CustomerName} bought {message.Quantity} of product {message.ProductId} for ${message.PurchasePrice}");
+        var description = $"Order {message.ProductId}: " + 
+            $"{message.CustomerName} bought {message.Quantity} of product {message.ProductId} for ${message.PurchasePrice}";
+        _logger.LogInformation(description);
+        return description;
     }
 }
 

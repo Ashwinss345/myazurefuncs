@@ -2,9 +2,13 @@ Post http://localhost:7071/api/purchase
 Content-Type: application/json
 
 {
-     "ProductId" : 2222, 
-     "Quantity" : 10, 
-     "CustomerName" : "Shobika", 
-     "CustomerEmail" : "shobi@gmail.com", 
-     "PurchasePrice" : 50.50
+     "ProductId" : 555, 
+     "Quantity" : 307, 
+     "CustomerName" : "NNNn", 
+     "CustomerEmail" : "NNM@gmail.com", 
+     "PurchasePrice" : 135.50
 }
+####
+
+Get
+http://localhost:7071/api/purchase/da21b93f-0019-4be2-93ff-fea70a48bada
