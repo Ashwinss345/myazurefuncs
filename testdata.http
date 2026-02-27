@@ -10,13 +10,11 @@ Content-Type: application/json
 }
 ###
 
-Get
-http://localhost:7071/api/purchase/da21b93f-0019-4be2-93ff-fea70a48bada
+Get http://localhost:7071/api/purchase/da21b93f-0019-4be2-93ff-fea70a48bada
 
 
 ###
-Get 
-http://localhost:7071/api/NewOrderOrchestration_HttpStart
+Get http://localhost:7071/api/NewOrderOrchestration_HttpStart
 
 ###
 POST https://example.com/comments HTTP/1.1
@@ -26,3 +24,18 @@ content-type: application/json
     "name": "sample",
     "time": "Wed, 21 Oct 2015 18:27:50 GMT"
 }
+###
+POST http://localhost:7071/api/NewOrderOrchestration_HttpStart?price=800 HTTP/1.1
+
+###
+
+POST http://localhost:7071/api/NewOrderOrchestration_Approve?id=5bd131fc01c244f0a92ea59722647491 HTTP/1.1
+Content-Type: application/json
+
+{
+    "IsApproved": true,
+    "ApprovedBy": "manager1"
+}
+
+###
+GET http://localhost:7071/runtime/webhooks/durabletask/instances/5bd131fc01c244f0a92ea59722647491?code=e7Rne_wGW_xN0rHKceJRQtWh6-05NAxuBVhdyU1cKp8FAzFuJrs91g==
