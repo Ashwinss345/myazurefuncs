@@ -1,3 +1,5 @@
+using System.Buffers.Text;
+using System.Text;
 using Azure;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +17,9 @@ public class NewPurchaseWebhookResponse
     
     [HttpResult]
     public IActionResult? Result { get; set; }
+
+    [CosmosDBOutput("azurefuncs","Orders", Connection = "CosmosDbConnection")]
+    public OrderDocument? OrderDocument { get; set; }
 }
 public class NewPurchaseWebhook
 {
@@ -30,17 +35,46 @@ public class NewPurchaseWebhook
 
     [Function(nameof(NewPurchaseWebhookResponse))]
     public async Task<NewPurchaseWebhookResponse> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "purchase")]
-     HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "purchase")] HttpRequest req)
+        
     {
         _logger.LogInformation("C# HTTP trigger function processed a request.");
         var order = await req.ReadFromJsonAsync<NewOrderWorkbook>();
         if (order == null) throw new ArgumentException("Order not found or invalid.");
         
-        return await Task.FromResult(new NewPurchaseWebhookResponse{
-            Message = new NewOrderMessage(Guid.NewGuid(), order.ProductId, order.Quantity, order.CustomerName, order.CustomerEmail, order.PurchasePrice),
+        NewOrderMessage message = new(Guid.NewGuid(), order.ProductId, order.Quantity, order.CustomerName, order.CustomerEmail, order.PurchasePrice);
+
+        _logger.LogInformation("New order received: " +
+            $"{message.OrderId} bought {order.Quantity} of product {order.ProductId} for ${order.PurchasePrice} customer details: {order.CustomerName}, {order.CustomerEmail}");
+        
+        var document1 = new OrderDocument
+        {
+            OrderId = message.OrderId.ToString(),
+            ProductId = order.ProductId,
+            Quantity = order.Quantity,            
+            CustomerName = order.CustomerName,
+            CustomerEmail = order.CustomerEmail,
+            PurchasePrice = order.PurchasePrice
+        };
+
+        var document = new OrderDocument
+        {
+            OrderId = "testorderid",
+            ProductId = 123,
+            Quantity = 10,            
+            CustomerName = "testcustomer",
+            CustomerEmail = "testcustomer@example.com",
+            PurchasePrice = 999.99M
+        };
+
+        _logger.LogInformation("New order received: " + 
+            $"{document.OrderId} bought {document.Quantity} of product {document.ProductId} for ${document.PurchasePrice} customer details: {document.CustomerName}, {document.CustomerEmail}");
+
+        return await Task.FromResult(new NewPurchaseWebhookResponse {
+            OrderDocument = document,
+            Message = message,
             Result = new OkObjectResult($"Thanks {order.CustomerName} for purchasing {order.Quantity} of product {order.ProductId} for ${order.PurchasePrice}")
-        });
+        });        
     }
 
     [Function(nameof(GetPurchase))]
